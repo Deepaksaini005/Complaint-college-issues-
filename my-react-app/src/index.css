@@ -1,1 +1,16 @@
 @import "tailwindcss";
+
+/* ==========================
+   JECRC THEME VARIABLES (Global)
+=========================== */
+:root {
+  --vamtam-accent-color-1: #de1819; /* Primary Red */
+  --vamtam-accent-color-2: #ffc53a; /* Golden Yellow */
+  --vamtam-body-background-color: #fafafa;
+  --vamtam-primary-font-color: #292929;
+  --vamtam-btn-text-color: #de1819;
+  --vamtam-sticky-header-bg-color: #de1819;
+  --vamtam-body-link-hover: #ffc53a;
+  --vamtam-accent-color-8: #545454;
+  --max-width: 1150px;
+}

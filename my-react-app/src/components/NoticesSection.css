@@ -1,0 +1,154 @@
+.notices-section {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.notices-header {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.notices-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #1a202c;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.notices-header i {
+  font-size: 1.75rem;
+  color: #CD201F;
+}
+
+.notices-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.notice-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border-left: 4px solid;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.notice-item:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.notice-item.priority-high {
+  background: #fef2f2;
+  border-left-color: #ef4444;
+}
+
+.notice-item.priority-medium {
+  background: #fffbeb;
+  border-left-color: #f59e0b;
+}
+
+.notice-item.priority-low {
+  background: #eff6ff;
+  border-left-color: #3b82f6;
+}
+
+.notice-priority-indicator {
+  width: 8px;
+  background: currentColor;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.notice-item.priority-high .notice-priority-indicator {
+  background: #ef4444;
+}
+
+.notice-item.priority-medium .notice-priority-indicator {
+  background: #f59e0b;
+}
+
+.notice-item.priority-low .notice-priority-indicator {
+  background: #3b82f6;
+}
+
+.notice-content-wrapper {
+  flex: 1;
+}
+
+.notice-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+  gap: 1rem;
+}
+
+.notice-title-row h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #1a202c;
+  font-weight: 700;
+  flex: 1;
+}
+
+.notice-date {
+  font-size: 0.85rem;
+  color: #718096;
+  white-space: nowrap;
+}
+
+.notice-text {
+  margin: 0 0 1rem;
+  color: #4a5568;
+  line-height: 1.6;
+  font-size: 1rem;
+}
+
+.notice-meta {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: #718096;
+}
+
+.notice-audience,
+.notice-expiry {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.notice-audience i,
+.notice-expiry i {
+  font-size: 1rem;
+}
+
+@media (max-width: 768px) {
+  .notices-section {
+    padding: 1.5rem;
+  }
+
+  .notice-title-row {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .notice-meta {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
+
