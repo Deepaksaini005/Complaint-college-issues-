@@ -1,47 +1,37 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import './FAQSection.css'
+import { contentAPI } from '../services/apiClient'
 
-// This will be shared state or context in real app
-const mockFAQs = [
-  {
-    id: 1,
-    question: 'How do I submit a complaint?',
-    answer: 'You can submit a complaint by logging into the student portal and clicking on "Submit Complaint". Fill in the required details and submit.',
-    category: 'General',
-    order: 1
-  },
-  {
-    id: 2,
-    question: 'How long does it take to resolve a complaint?',
-    answer: 'The resolution time depends on the priority and nature of the complaint. High priority complaints are usually resolved within 24-48 hours, while others may take 3-5 business days.',
-    category: 'General',
-    order: 2
-  },
-  {
-    id: 3,
-    question: 'Can I track the status of my complaint?',
-    answer: 'Yes, you can track the status of your complaint in the "My Complaints" section of your student dashboard. You will see real-time updates on the status.',
-    category: 'General',
-    order: 3
-  },
-  {
-    id: 4,
-    question: 'What should I do if my room AC is not working?',
-    answer: 'Submit a complaint under the Hostel category with High priority. Include photos if possible. The maintenance team will be assigned to fix it.',
-    category: 'Hostel',
-    order: 1
-  }
-]
+const defaultCategories = ['All', 'General', 'Hostel', 'Maintenance', 'Cafeteria', 'Library', 'Transport']
 
 const FAQSection = () => {
   const [expandedFAQ, setExpandedFAQ] = useState(null)
   const [selectedCategory, setSelectedCategory] = useState('All')
+  const [faqs, setFaqs] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
-  const categories = ['All', 'General', 'Hostel', 'Maintenance', 'Cafeteria', 'Library', 'Transport']
-  const activeFAQs = mockFAQs.filter(faq => faq.status !== 'Inactive')
-  const filteredFAQs = selectedCategory === 'All' 
-    ? activeFAQs 
-    : activeFAQs.filter(faq => faq.category === selectedCategory)
+  useEffect(() => {
+    const fetchFaqs = async () => {
+      try {
+        setLoading(true)
+        const data = await contentAPI.faqs(selectedCategory)
+        setFaqs(data)
+        setError('')
+      } catch (err) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchFaqs()
+  }, [selectedCategory])
+
+  const categories = useMemo(() => {
+    const dynamic = new Set(defaultCategories)
+    faqs.forEach((faq) => dynamic.add(faq.category))
+    return Array.from(dynamic)
+  }, [faqs])
 
   const toggleFAQ = (id) => {
     setExpandedFAQ(expandedFAQ === id ? null : id)
@@ -67,25 +57,35 @@ const FAQSection = () => {
       </div>
 
       <div className="faqs-list">
-        {filteredFAQs.length === 0 ? (
+        {loading ? (
+          <div className="no-faqs">
+            <i className="bx bx-loader-alt bx-spin"></i>
+            <p>Loading FAQs...</p>
+          </div>
+        ) : error ? (
+          <div className="no-faqs">
+            <i className="bx bx-error-circle"></i>
+            <p>{error}</p>
+          </div>
+        ) : faqs.length === 0 ? (
           <div className="no-faqs">
             <i className="bx bx-info-circle"></i>
             <p>No FAQs available in this category</p>
           </div>
         ) : (
-          filteredFAQs.map(faq => (
-            <div key={faq.id} className="faq-item">
+          faqs.map(faq => (
+            <div key={faq._id || faq.id} className="faq-item">
               <button
                 className="faq-question-btn"
-                onClick={() => toggleFAQ(faq.id)}
+                onClick={() => toggleFAQ(faq._id || faq.id)}
               >
                 <span className="faq-icon">
-                  <i className={`bx ${expandedFAQ === faq.id ? 'bx-chevron-down' : 'bx-chevron-right'}`}></i>
+                  <i className={`bx ${expandedFAQ === (faq._id || faq.id) ? 'bx-chevron-down' : 'bx-chevron-right'}`}></i>
                 </span>
                 <span className="faq-text">{faq.question}</span>
                 <span className="faq-category-tag">{faq.category}</span>
               </button>
-              {expandedFAQ === faq.id && (
+              {expandedFAQ === (faq._id || faq.id) && (
                 <div className="faq-answer">
                   <p>{faq.answer}</p>
                 </div>

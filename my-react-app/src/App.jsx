@@ -1,67 +1,126 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import HomePage from './components/HomePage'
-import About from './components/About'
-import Contact from './components/Contact'
-import FAQ from './components/FAQ'
-import Policy from './components/Policy'
-import Login from './components/Login'
-import Signup from './components/Signup'
-import ComplaintsPage from './components/ComplaintsPage'
-import Auth from './components/Auth'
-import StudentDashboard from './components/StudentDashboard'
-import AdminPortal from './components/AdminPortal'
-import AdminRegister from './components/AdminRegister'
-import AdminDashboard from './components/AdminDashboard'
-import ViewComplaints from './components/ViewComplaints'
-import AdminManagement from './components/AdminManagement'
-import HostelAdminLogin from './components/HostelAdminLogin'
-import MaintenanceAdminLogin from './components/MaintenanceAdminLogin'
-import CafeteriaAdminLogin from './components/CafeteriaAdminLogin'
-import LibraryAdminLogin from './components/LibraryAdminLogin'
-import TransportAdminLogin from './components/TransportAdminLogin'
-import RoleBasedDashboard from './components/RoleBasedDashboard'
-import AdminNotifications from './components/AdminNotifications'
-import DepartmentStatus from './components/DepartmentStatus'
-import NoticeManagement from './components/NoticeManagement'
-import UserDetails from './components/UserDetails'
-import FAQManagement from './components/FAQManagement'
+import HomePage from './pages/public/HomePage'
+import About from './pages/public/About'
+import Contact from './pages/public/Contact'
+import FAQ from './pages/public/FAQ'
+import Policy from './pages/public/Policy'
+import Login from './pages/public/Login'
+import Signup from './pages/public/Signup'
+import ComplaintsPage from './pages/public/ComplaintsPage'
+import Auth from './pages/student/Auth'
+import StudentDashboard from './pages/student/StudentDashboard'
+import AdminPortal from './pages/admin/AdminPortal'
+import AdminRegister from './pages/admin/AdminRegister'
+import AdminDashboard from './pages/admin/AdminDashboard'
+import ViewComplaints from './pages/admin/ViewComplaints'
+import AdminManagement from './pages/admin/AdminManagement'
+import HostelAdminLogin from './pages/admin/HostelAdminLogin'
+import MaintenanceAdminLogin from './pages/admin/MaintenanceAdminLogin'
+import CafeteriaAdminLogin from './pages/admin/CafeteriaAdminLogin'
+import LibraryAdminLogin from './pages/admin/LibraryAdminLogin'
+import TransportAdminLogin from './pages/admin/TransportAdminLogin'
+import RoleBasedDashboard from './pages/admin/RoleBasedDashboard'
+import AdminNotifications from './pages/admin/AdminNotifications'
+import DepartmentStatus from './pages/admin/DepartmentStatus'
+import NoticeManagement from './pages/admin/NoticeManagement'
+import UserDetails from './pages/admin/UserDetails'
+import FAQManagement from './pages/admin/FAQManagement'
+import { authAPI } from './services/apiClient'
+
+const STUDENT_TOKEN_KEY = 'campuscare_token'
+const ADMIN_TOKEN_KEY = 'campuscare_admin_token'
+const STUDENT_SESSION_KEY = 'campuscare_student_session'
+const ADMIN_SESSION_KEY = 'campuscare_admin_session'
+const DEPARTMENT_ROLES = ['hostel', 'maintenance', 'cafeteria', 'library', 'transport']
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false)
-  const [adminRole, setAdminRole] = useState('Super Admin')
+  const [studentUser, setStudentUser] = useState(null)
+  const [adminUser, setAdminUser] = useState(null)
+  const [authLoading, setAuthLoading] = useState(true)
 
-  const handleLogin = () => {
-    setIsAuthenticated(true)
-  }
+  const restoreSession = async (tokenKey, sessionKey) => {
+    const cachedSession = localStorage.getItem(sessionKey)
+    const token = localStorage.getItem(tokenKey)
 
-  const handleLogout = () => {
-    setIsAuthenticated(false)
-    localStorage.removeItem('campuscare_session')
-  }
-
-  const handleAdminLogin = (role = 'Super Admin') => {
-    setIsAdminAuthenticated(true)
-    setAdminRole(role)
-  }
-
-  const handleAdminLogout = () => {
-    setIsAdminAuthenticated(false)
-    setAdminRole('Super Admin')
-  }
-
-  const renderStudentPortal = () => {
-    // Check both state and localStorage for authentication
-    const session = JSON.parse(localStorage.getItem('campuscare_session') || 'null')
-    const isLoggedIn = isAuthenticated || (session && session.role === 'student')
-
-    if (isLoggedIn) {
-      return <StudentDashboard onLogout={handleLogout} />
+    if (!token) {
+      return cachedSession ? JSON.parse(cachedSession) : null
     }
 
-    return <Auth onLogin={handleLogin} />
+    try {
+      const profile = await authAPI.getProfile(tokenKey)
+      localStorage.setItem(sessionKey, JSON.stringify(profile))
+      return profile
+    } catch (error) {
+      localStorage.removeItem(tokenKey)
+      localStorage.removeItem(sessionKey)
+      return cachedSession ? JSON.parse(cachedSession) : null
+    }
   }
+
+  useEffect(() => {
+    const loadSessions = async () => {
+      const [studentProfile, adminProfile] = await Promise.all([
+        restoreSession(STUDENT_TOKEN_KEY, STUDENT_SESSION_KEY),
+        restoreSession(ADMIN_TOKEN_KEY, ADMIN_SESSION_KEY)
+      ])
+      setStudentUser(studentProfile)
+      setAdminUser(adminProfile)
+      setAuthLoading(false)
+    }
+
+    loadSessions()
+  }, [])
+
+  const handleLogin = (user, token) => {
+    const isStudent = user.role === 'student'
+    const tokenKey = isStudent ? STUDENT_TOKEN_KEY : ADMIN_TOKEN_KEY
+    const sessionKey = isStudent ? STUDENT_SESSION_KEY : ADMIN_SESSION_KEY
+
+    if (token) {
+      localStorage.setItem(tokenKey, token)
+    }
+    localStorage.setItem(sessionKey, JSON.stringify(user))
+
+    if (isStudent) {
+      setStudentUser(user)
+      window.location.href = '/student/dashboard'
+    } else {
+      setAdminUser(user)
+      if (user.role === 'admin') {
+        window.location.href = '/admin/dashboard'
+      } else if (DEPARTMENT_ROLES.includes(user.role)) {
+        window.location.href = '/admin/role-based-dashboard'
+      } else {
+        window.location.href = '/admin/dashboard'
+      }
+    }
+  }
+
+  const handleLogout = (role = 'all') => {
+    if (role === 'all' || role === 'student') {
+      localStorage.removeItem(STUDENT_TOKEN_KEY)
+      localStorage.removeItem(STUDENT_SESSION_KEY)
+      setStudentUser(null)
+    }
+    if (role === 'all' || role === 'admin') {
+      localStorage.removeItem(ADMIN_TOKEN_KEY)
+      localStorage.removeItem(ADMIN_SESSION_KEY)
+      setAdminUser(null)
+    }
+  }
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F8F8F8] text-[#292929] font-['Poppins']">
+        <p className="text-lg font-semibold">Loading Campus Care...</p>
+      </div>
+    )
+  }
+
+  const isAdminLoggedIn = Boolean(adminUser)
+  const adminRole = adminUser?.role || 'student'
+  const isSuperAdmin = adminRole === 'admin'
 
   return (
     <Router>
@@ -75,24 +134,42 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/faq" element={<FAQ />} />
           <Route path="/policy" element={<Policy />} />
-          <Route path="/login" element={<Login />} />
+          <Route path="/login" element={<Login onLogin={handleLogin} />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/complaints" element={<ComplaintsPage />} />
 
-          {/* Student Portal Route (Legacy - can be accessed via login) */}
+          {/* Student Portal Route - Redirect to dashboard if logged in, otherwise show login */}
           <Route
             path="/student"
-            element={<>{renderStudentPortal()}</>}
+            element={
+              studentUser ? (
+                <Navigate to="/student/dashboard" replace />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          
+          {/* Student Dashboard Route */}
+          <Route
+            path="/student/dashboard"
+            element={
+              studentUser ? (
+                <StudentDashboard onLogout={() => handleLogout('student')} user={studentUser} />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
           />
 
           {/* Admin Login Route */}
           <Route
             path="/adminpannel"
             element={
-              isAdminAuthenticated ? (
+              isAdminLoggedIn ? (
                 <Navigate to="/admin/dashboard" replace />
               ) : (
-                <AdminPortal onLogin={handleAdminLogin} />
+                <AdminPortal onLogin={handleLogin} />
               )
             }
           />
@@ -101,7 +178,7 @@ function App() {
           <Route
             path="/admin/register"
             element={
-              isAdminAuthenticated ? (
+              isAdminLoggedIn ? (
                 <Navigate to="/admin/dashboard" replace />
               ) : (
                 <AdminRegister />
@@ -113,8 +190,8 @@ function App() {
           <Route
             path="/admin/dashboard"
             element={
-              isAdminAuthenticated && adminRole === 'Super Admin' ? (
-                <AdminDashboard onLogout={handleAdminLogout} userRole={adminRole} />
+              isAdminLoggedIn ? (
+                <AdminDashboard onLogout={() => handleLogout('admin')} userRole={adminRole} />
               ) : (
                 <Navigate to="/adminpannel" replace />
               )
@@ -125,8 +202,8 @@ function App() {
           <Route
             path="/admin/complaints"
             element={
-              isAdminAuthenticated ? (
-                <ViewComplaints onLogout={handleAdminLogout} userRole={adminRole} />
+              isAdminLoggedIn ? (
+                <ViewComplaints onLogout={() => handleLogout('admin')} userRole={adminRole} />
               ) : (
                 <Navigate to="/adminpannel" replace />
               )
@@ -137,8 +214,8 @@ function App() {
           <Route
             path="/admin/manage"
             element={
-              isAdminAuthenticated && adminRole === 'Super Admin' ? (
-                <AdminManagement onLogout={handleAdminLogout} />
+              isSuperAdmin ? (
+                <AdminManagement onLogout={() => handleLogout('admin')} />
               ) : (
                 <Navigate to="/adminpannel" replace />
               )
@@ -149,8 +226,8 @@ function App() {
           <Route
             path="/admin/notifications"
             element={
-              isAdminAuthenticated ? (
-                <AdminNotifications onLogout={handleAdminLogout} userRole={adminRole} />
+              isAdminLoggedIn ? (
+                <AdminNotifications onLogout={() => handleLogout('admin')} userRole={adminRole} />
               ) : (
                 <Navigate to="/adminpannel" replace />
               )
@@ -161,8 +238,8 @@ function App() {
           <Route
             path="/admin/department-status"
             element={
-              isAdminAuthenticated && adminRole === 'Super Admin' ? (
-                <DepartmentStatus onLogout={handleAdminLogout} userRole={adminRole} />
+              isSuperAdmin ? (
+                <DepartmentStatus onLogout={() => handleLogout('admin')} userRole={adminRole} />
               ) : (
                 <Navigate to="/adminpannel" replace />
               )
@@ -173,8 +250,8 @@ function App() {
           <Route
             path="/admin/notice-management"
             element={
-              isAdminAuthenticated && adminRole === 'Super Admin' ? (
-                <NoticeManagement onLogout={handleAdminLogout} userRole={adminRole} />
+              isSuperAdmin ? (
+                <NoticeManagement onLogout={() => handleLogout('admin')} userRole={adminRole} />
               ) : (
                 <Navigate to="/adminpannel" replace />
               )
@@ -185,8 +262,8 @@ function App() {
           <Route
             path="/admin/user-details"
             element={
-              isAdminAuthenticated && adminRole === 'Super Admin' ? (
-                <UserDetails onLogout={handleAdminLogout} userRole={adminRole} />
+              isSuperAdmin ? (
+                <UserDetails onLogout={() => handleLogout('admin')} userRole={adminRole} />
               ) : (
                 <Navigate to="/adminpannel" replace />
               )
@@ -197,8 +274,8 @@ function App() {
           <Route
             path="/admin/faq-management"
             element={
-              isAdminAuthenticated && adminRole === 'Super Admin' ? (
-                <FAQManagement onLogout={handleAdminLogout} userRole={adminRole} />
+              isSuperAdmin ? (
+                <FAQManagement onLogout={() => handleLogout('admin')} userRole={adminRole} />
               ) : (
                 <Navigate to="/adminpannel" replace />
               )
@@ -209,10 +286,10 @@ function App() {
           <Route
             path="/admin/hostel/login"
             element={
-              isAdminAuthenticated ? (
+              adminRole === 'hostel' ? (
                 <Navigate to="/admin/hostel/dashboard" replace />
               ) : (
-                <HostelAdminLogin onLogin={handleAdminLogin} />
+                <HostelAdminLogin onLogin={handleLogin} />
               )
             }
           />
@@ -221,8 +298,8 @@ function App() {
           <Route
             path="/admin/hostel/dashboard"
             element={
-              isAdminAuthenticated && adminRole === 'Hostel Admin' ? (
-                <RoleBasedDashboard userRole="Hostel Admin" onLogout={handleAdminLogout} />
+              adminRole === 'hostel' ? (
+                <RoleBasedDashboard userRole="Hostel Admin" onLogout={() => handleLogout('admin')} />
               ) : (
                 <Navigate to="/admin/hostel/login" replace />
               )
@@ -233,10 +310,10 @@ function App() {
           <Route
             path="/admin/maintenance/login"
             element={
-              isAdminAuthenticated ? (
+              adminRole === 'maintenance' ? (
                 <Navigate to="/admin/maintenance/dashboard" replace />
               ) : (
-                <MaintenanceAdminLogin onLogin={handleAdminLogin} />
+                <MaintenanceAdminLogin onLogin={handleLogin} />
               )
             }
           />
@@ -245,8 +322,8 @@ function App() {
           <Route
             path="/admin/maintenance/dashboard"
             element={
-              isAdminAuthenticated && adminRole === 'Maintenance Admin' ? (
-                <RoleBasedDashboard userRole="Maintenance Admin" onLogout={handleAdminLogout} />
+              adminRole === 'maintenance' ? (
+                <RoleBasedDashboard userRole="Maintenance Admin" onLogout={() => handleLogout('admin')} />
               ) : (
                 <Navigate to="/admin/maintenance/login" replace />
               )
@@ -257,10 +334,10 @@ function App() {
           <Route
             path="/admin/cafeteria/login"
             element={
-              isAdminAuthenticated ? (
+              adminRole === 'cafeteria' ? (
                 <Navigate to="/admin/cafeteria/dashboard" replace />
               ) : (
-                <CafeteriaAdminLogin onLogin={handleAdminLogin} />
+                <CafeteriaAdminLogin onLogin={handleLogin} />
               )
             }
           />
@@ -269,8 +346,8 @@ function App() {
           <Route
             path="/admin/cafeteria/dashboard"
             element={
-              isAdminAuthenticated && adminRole === 'Cafeteria Admin' ? (
-                <RoleBasedDashboard userRole="Cafeteria Admin" onLogout={handleAdminLogout} />
+              adminRole === 'cafeteria' ? (
+                <RoleBasedDashboard userRole="Cafeteria Admin" onLogout={() => handleLogout('admin')} />
               ) : (
                 <Navigate to="/admin/cafeteria/login" replace />
               )
@@ -281,10 +358,10 @@ function App() {
           <Route
             path="/admin/library/login"
             element={
-              isAdminAuthenticated ? (
+              adminRole === 'library' ? (
                 <Navigate to="/admin/library/dashboard" replace />
               ) : (
-                <LibraryAdminLogin onLogin={handleAdminLogin} />
+                <LibraryAdminLogin onLogin={handleLogin} />
               )
             }
           />
@@ -293,8 +370,8 @@ function App() {
           <Route
             path="/admin/library/dashboard"
             element={
-              isAdminAuthenticated && adminRole === 'Library Admin' ? (
-                <RoleBasedDashboard userRole="Library Admin" onLogout={handleAdminLogout} />
+              adminRole === 'library' ? (
+                <RoleBasedDashboard userRole="Library Admin" onLogout={() => handleLogout('admin')} />
               ) : (
                 <Navigate to="/admin/library/login" replace />
               )
@@ -305,10 +382,10 @@ function App() {
           <Route
             path="/admin/transport/login"
             element={
-              isAdminAuthenticated ? (
+              adminRole === 'transport' ? (
                 <Navigate to="/admin/transport/dashboard" replace />
               ) : (
-                <TransportAdminLogin onLogin={handleAdminLogin} />
+                <TransportAdminLogin onLogin={handleLogin} />
               )
             }
           />
@@ -317,8 +394,8 @@ function App() {
           <Route
             path="/admin/transport/dashboard"
             element={
-              isAdminAuthenticated && adminRole === 'Transport Admin' ? (
-                <RoleBasedDashboard userRole="Transport Admin" onLogout={handleAdminLogout} />
+              adminRole === 'transport' ? (
+                <RoleBasedDashboard userRole="Transport Admin" onLogout={() => handleLogout('admin')} />
               ) : (
                 <Navigate to="/admin/transport/login" replace />
               )
@@ -334,4 +411,3 @@ function App() {
 }
 
 export default App
-

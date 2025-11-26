@@ -1,9 +1,21 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import './AdminSidebar.css'
 
-const AdminSidebar = ({ userRole = 'Super Admin' }) => {
+const AdminSidebar = ({ userRole = 'admin' }) => {
   const navigate = useNavigate()
   const location = useLocation()
+
+  // Map backend roles to display names
+  const roleDisplayMap = {
+    'admin': 'Super Admin',
+    'hostel': 'Hostel Admin',
+    'maintenance': 'Maintenance Admin',
+    'cafeteria': 'Cafeteria Admin',
+    'library': 'Library Admin',
+    'transport': 'Transport Admin'
+  }
+
+  const displayRole = roleDisplayMap[userRole] || userRole
 
   const menuItems = [
     {
@@ -11,56 +23,56 @@ const AdminSidebar = ({ userRole = 'Super Admin' }) => {
       label: 'Dashboard',
       icon: 'bx-grid-alt',
       path: '/admin/dashboard',
-      roles: ['Super Admin', 'Hostel Admin', 'Maintenance Admin', 'Cafeteria Admin', 'Library Admin', 'Transport Admin']
+      roles: ['admin', 'hostel', 'maintenance', 'cafeteria', 'library', 'transport']
     },
     {
       id: 'complaints',
       label: 'View Complaints',
       icon: 'bx-list-ul',
       path: '/admin/complaints',
-      roles: ['Super Admin', 'Hostel Admin', 'Maintenance Admin', 'Cafeteria Admin', 'Library Admin', 'Transport Admin']
+      roles: ['admin', 'hostel', 'maintenance', 'cafeteria', 'library', 'transport']
     },
     {
       id: 'notifications',
       label: 'Notifications',
       icon: 'bx-bell',
       path: '/admin/notifications',
-      roles: ['Super Admin', 'Hostel Admin', 'Maintenance Admin', 'Cafeteria Admin', 'Library Admin', 'Transport Admin']
+      roles: ['admin', 'hostel', 'maintenance', 'cafeteria', 'library', 'transport']
     },
     {
       id: 'admin-management',
       label: 'Admin Management',
       icon: 'bx-user-plus',
       path: '/admin/manage',
-      roles: ['Super Admin'] // Only Super Admin can access
+      roles: ['admin'] // Only admin can access
     },
     {
       id: 'department-status',
       label: 'Department Status',
       icon: 'bx-building-house',
       path: '/admin/department-status',
-      roles: ['Super Admin'] // Only Super Admin can access
+      roles: ['admin'] // Only admin can access
     },
     {
       id: 'notice-management',
       label: 'Notice Management',
       icon: 'bx-note',
       path: '/admin/notice-management',
-      roles: ['Super Admin'] // Only Super Admin can access
+      roles: ['admin'] // Only admin can access
     },
     {
       id: 'user-details',
       label: 'User Details',
       icon: 'bx-group',
       path: '/admin/user-details',
-      roles: ['Super Admin'] // Only Super Admin can access
+      roles: ['admin'] // Only admin can access
     },
     {
       id: 'faq-management',
       label: 'FAQ Management',
       icon: 'bx-help-circle',
       path: '/admin/faq-management',
-      roles: ['Super Admin'] // Only Super Admin can access
+      roles: ['admin'] // Only admin can access
     }
   ]
 
@@ -81,7 +93,7 @@ const AdminSidebar = ({ userRole = 'Super Admin' }) => {
         </div>
         <div className="user-role-badge">
           <i className="bx bx-user-circle"></i>
-          <span>{userRole}</span>
+          <span>{displayRole}</span>
         </div>
       </div>
 

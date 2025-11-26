@@ -1,0 +1,9 @@
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import AdminSidebar from '../../components/AdminSidebar'
+import { contentAPI } from '../../services/apiClient'
+import './FAQManagement.css'
+
+// NOTE: This file is a reference patch and not used directly.
+
+
